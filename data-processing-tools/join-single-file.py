@@ -46,6 +46,42 @@ def _clean_localized(result):
     cleaned = original != result
     return result, cleaned
 
+def _has_end_point(sentence):
+    for i in range(len(sentence) - 1, 0, -1):
+        if sentence[i].isspace():
+            continue
+
+        return sentence[i] == '.'
+
+    return False
+
+def _find_insertion_pont(sentence):
+    if len(sentence.split()) < 2:
+        return -1
+
+    for i in range(len(sentence) - 1, 0, -1):
+        if sentence[i].isspace():
+            continue
+
+        if sentence[i] in ['!', ')', '?', ',', '-', ';', ':']:
+            return -1
+
+        if '.' in sentence:
+            return -1
+
+        return i + 1
+
+    return -1
+
+
+def _add_missing_point(src, trg):
+    if _has_end_point(src) is True and _has_end_point(trg) is False:
+        index = _find_insertion_pont(trg)
+        if index > -1:
+            trg = trg[:index] + "." + trg[index:]
+            return trg, True
+
+    return trg, False
 
 def split_in_six_files(src_filename, tgt_filename):
 
@@ -83,6 +119,7 @@ def split_in_six_files(src_filename, tgt_filename):
         print("test_each {0}".format(test_each))
 
         clean = 0
+        points = 0
         while True:
 
             src = read_source.readline()
@@ -92,6 +129,13 @@ def split_in_six_files(src_filename, tgt_filename):
                 break;
 
             trg, cleaned = _clean_localized(trg)
+
+            new_trg, missing_point = _add_missing_point(src, trg)
+
+            if missing_point:
+                #print(f"{src} - {trg} - {new_trg}")
+                points = points + 1
+                trg = new_trg
 
             pair = src + trg
             if pair in pairs:
@@ -119,8 +163,10 @@ def split_in_six_files(src_filename, tgt_filename):
 
     pclean = clean * 100 / strings
     pduplicated = duplicated * 100 / strings
+    ppoints = points * 100 / strings
     print(f"Strings: {strings}, duplicated {duplicated} ({pduplicated:.2f}%)")
     print(f"Cleaned acute accents: {clean} ({pclean:.2f}%)")
+    print(f"Points added {points}: ({ppoints:.2f}%)")
 
 def append_lines_from_file(src_filename, trg_file):
     lines = 0
